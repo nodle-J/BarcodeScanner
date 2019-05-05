@@ -66,7 +66,7 @@ public final class CameraViewController: UIViewController {
         captureDevice.unlockForConfiguration()
       } catch {}
 
-      flashButton.setImage(torchMode.image, for: UIControl.State())
+        flashButton.setImage(torchMode.image, for: UIControl.State())
     }
   }
 
