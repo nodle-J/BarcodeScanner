@@ -18,7 +18,7 @@ public final class CameraViewController: UIViewController {
   weak var delegate: CameraViewControllerDelegate?
 
   /// Focus view type.
-  public var barCodeFocusViewType: FocusViewType = .animated
+  public var barCodeFocusViewType: FocusViewType = .oneDimension
   public var showsCameraButton: Bool = false {
     didSet {
       cameraButton.isHidden = showsCameraButton
@@ -32,7 +32,7 @@ public final class CameraViewController: UIViewController {
   /// Animated focus view.
   public private(set) lazy var focusView: UIView = self.makeFocusView()
   /// Button to change torch mode.
-  public private(set) lazy var flashButton: UIButton = .init(type: .custom)
+  public private(set) lazy var flashButton: UIButton = UIButton()
   /// Button that opens settings to allow camera usage.
   public private(set) lazy var settingsButton: UIButton = self.makeSettingsButton()
   // Button to switch between front and back camera.
@@ -63,10 +63,16 @@ public final class CameraViewController: UIViewController {
       do {
         try captureDevice.lockForConfiguration()
         captureDevice.torchMode = torchMode.captureTorchMode
+//        if torchMode.captureTorchMode == .on {
+//            flashButton.isSelected = true
+//        }else{
+//            flashButton.isSelected = false
+//        }
         captureDevice.unlockForConfiguration()
       } catch {}
-
-        flashButton.setImage(torchMode.image, for: UIControl.State())
+        
+        print(flashButton.isSelected)
+        
     }
   }
 
@@ -77,7 +83,7 @@ public final class CameraViewController: UIViewController {
   private var backCameraDevice: AVCaptureDevice? {
     return AVCaptureDevice.default(for: .video)
   }
-
+    var startLocation = CGPoint()
   // MARK: - Initialization
 
   deinit {
@@ -96,17 +102,86 @@ public final class CameraViewController: UIViewController {
     guard let videoPreviewLayer = videoPreviewLayer else {
       return
     }
-
+    focusView.isHidden = true
+    flashButton.backgroundColor = UIColor.clear
+    flashButton.layer.cornerRadius = 30
+    flashButton.clipsToBounds = true
+    flashButton.setImage(UIImage(named: "diantong"), for: .normal)
+    
     view.layer.addSublayer(videoPreviewLayer)
     view.addSubviews(settingsButton, flashButton, focusView, cameraButton)
-
+  
+    flashButton.setImage(UIImage(named: "diantongselect"), for: .selected)
     torchMode = .off
     focusView.isHidden = true
     setupCamera()
     setupConstraints()
     setupActions()
+    
+    
+    let panRecognizer = UIPanGestureRecognizer(target: self, action:  #selector(panedView))
+       self.view.addGestureRecognizer(panRecognizer)
   }
+    @objc func panedView(sender:UIPanGestureRecognizer){
+           //var startLocation = CGPoint()
+           //UIGestureRecognizerState has been renamed to UIGestureRecognizer.State in Swift 4
+           if (sender.state == UIGestureRecognizer.State.began) {
+               startLocation = sender.location(in: self.view)
+           }else if sender.state == UIGestureRecognizer.State.changed
+           {
+                
+                let stopLocation = sender.location(in: self.view)
+                let dx = stopLocation.x - startLocation.x;
+                let dy = stopLocation.y - startLocation.y;
+                let distance = sqrt(dx*dx + dy*dy );
+                
+                
+            
+               // var sc = Int(dy/100)
+            
+                if let captureDevice =  self.captureDevice {
+                    let d = distance/300
+                    var zoom = CGFloat(0)
+                    if dy < 0 {
+                        zoom = captureDevice.videoZoomFactor - d
+                        if zoom < 1 {
+                            zoom = 1
+                        }
+                    }else
+                    {
+                        zoom = captureDevice.videoZoomFactor + d
+                        if zoom > captureDevice.activeFormat.videoMaxZoomFactor {
+                            zoom = captureDevice.activeFormat.videoMaxZoomFactor
+                        }
+                    }
+                    do {
+                        
+                        try captureDevice.lockForConfiguration()
+                        
+                        
+                       
+                        captureDevice.videoZoomFactor = zoom
+                        
+                       
+                        captureDevice.unlockForConfiguration()
+                        
+                      } catch {
+                         print("Error setting configuration: \(error)")
+                      }
+                }
+            
+            
+                //let distance = sqrt(dx*dx + dy*dy );
+               // NSLog("changedDistance dy: %f", dy);
+           }
 
+           
+   }
+    
+    
+    
+    
+    
   public override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
     setupVideoPreviewLayerOrientation()
@@ -196,6 +271,7 @@ public final class CameraViewController: UIViewController {
 
   /// Sets the next torch mode.
   @objc private func handleFlashButtonTap() {
+    flashButton.isSelected =  !flashButton.isSelected
     torchMode = torchMode.next
   }
 
@@ -306,13 +382,13 @@ private extension CameraViewController {
   func setupConstraints() {
     if #available(iOS 11.0, *) {
       NSLayoutConstraint.activate(
-        flashButton.topAnchor.constraint(
-          equalTo: view.safeAreaLayoutGuide.topAnchor,
-          constant: 30
+        flashButton.bottomAnchor.constraint(
+          equalTo: view.safeAreaLayoutGuide.bottomAnchor,
+          constant: -30
         ),
-        flashButton.trailingAnchor.constraint(
-          equalTo: view.safeAreaLayoutGuide.trailingAnchor,
-          constant: -13
+        flashButton.centerXAnchor.constraint(
+          equalTo: view.safeAreaLayoutGuide.centerXAnchor,
+          constant: 0
         ),
         cameraButton.bottomAnchor.constraint(
           equalTo: view.safeAreaLayoutGuide.bottomAnchor,
@@ -327,7 +403,7 @@ private extension CameraViewController {
       )
     }
 
-    let imageButtonSize: CGFloat = 37
+    let imageButtonSize: CGFloat = 60
 
     NSLayoutConstraint.activate(
       flashButton.widthAnchor.constraint(equalToConstant: imageButtonSize),
@@ -398,14 +474,14 @@ private extension CameraViewController {
 private extension CameraViewController {
   func makeFocusView() -> UIView {
     let view = UIView()
-    view.layer.borderColor = UIColor.white.cgColor
-    view.layer.borderWidth = 2
-    view.layer.cornerRadius = 5
-    view.layer.shadowColor = UIColor.white.cgColor
-    view.layer.shadowRadius = 10.0
-    view.layer.shadowOpacity = 0.9
-    view.layer.shadowOffset = CGSize.zero
-    view.layer.masksToBounds = false
+//    view.layer.borderColor = UIColor.white.cgColor
+//    view.layer.borderWidth = 2
+//    view.layer.cornerRadius = 5
+//    view.layer.shadowColor = UIColor.white.cgColor
+//    view.layer.shadowRadius = 10.0
+//    view.layer.shadowOpacity = 0.9
+//    view.layer.shadowOffset = CGSize.zero
+//    view.layer.masksToBounds = false
     return view
   }
 

@@ -42,7 +42,7 @@ public final class MessageViewController: UIViewController {
 
   public override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
-    blurView.frame = view.bounds
+    blurView.frame = CGRect.zero
   }
 
   // MARK: - Animations

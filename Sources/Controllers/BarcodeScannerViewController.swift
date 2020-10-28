@@ -32,7 +32,10 @@ public protocol BarcodeScannerDismissalDelegate: class {
  - Not found error message
  */
 open class BarcodeScannerViewController: UIViewController {
+    
   private static let footerHeight: CGFloat = 75
+    
+    public var hideFooterView = true
 
   // MARK: - Public properties
 
@@ -68,18 +71,18 @@ open class BarcodeScannerViewController: UIViewController {
   // Title label and close button.
   public private(set) lazy var headerViewController: HeaderViewController = .init()
   /// Information view with description label.
-  public private(set) lazy var messageViewController: MessageViewController = .init()
+  //public private(set) lazy var messageViewController: MessageViewController = .init()
   /// Camera view with custom buttons.
   public private(set) lazy var cameraViewController: CameraViewController = .init()
 
   // Constraints that are activated when the view is used as a footer.
-  private lazy var collapsedConstraints: [NSLayoutConstraint] = self.makeCollapsedConstraints()
+//  private lazy var collapsedConstraints: [NSLayoutConstraint] = self.makeCollapsedConstraints()
   // Constraints that are activated when the view is used for loading animation and error messages.
-  private lazy var expandedConstraints: [NSLayoutConstraint] = self.makeExpandedConstraints()
+//  private lazy var expandedConstraints: [NSLayoutConstraint] = self.makeExpandedConstraints()
 
-  private var messageView: UIView {
-    return messageViewController.view
-  }
+//  private var messageView: UIView {
+//    return messageViewController.view
+//  }
 
   /// The current controller's status mode.
   private var status: Status = Status(state: .scanning) {
@@ -94,15 +97,15 @@ open class BarcodeScannerViewController: UIViewController {
     super.viewDidLoad()
     view.backgroundColor = UIColor.black
 
-    add(childViewController: messageViewController)
-    messageView.translatesAutoresizingMaskIntoConstraints = false
-    collapsedConstraints.activate()
+//    add(childViewController: messageViewController)
+//    messageView.translatesAutoresizingMaskIntoConstraints = false
+  //  collapsedConstraints.activate()
 
     cameraViewController.metadata = metadata
     cameraViewController.delegate = self
     add(childViewController: cameraViewController)
 
-    view.bringSubviewToFront(messageView)
+   // view.bringSubviewToFront(messageView)
   }
 
   open override func viewWillAppear(_ animated: Bool) {
@@ -136,7 +139,7 @@ open class BarcodeScannerViewController: UIViewController {
 
   private func changeStatus(from oldValue: Status, to newValue: Status) {
     guard newValue.state != .notFound else {
-      messageViewController.status = newValue
+    //  messageViewController.status = newValue
       DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 2.0) {
         self.status = Status(state: .scanning)
       }
@@ -154,14 +157,14 @@ open class BarcodeScannerViewController: UIViewController {
     }
 
     if newValue.state != .processing {
-      expandedConstraints.deactivate()
-      collapsedConstraints.activate()
+     // expandedConstraints.deactivate()
+     // collapsedConstraints.activate()
     } else {
-      collapsedConstraints.deactivate()
-      expandedConstraints.activate()
+     // collapsedConstraints.deactivate()
+    //  expandedConstraints.activate()
     }
 
-    messageViewController.status = newValue
+ //   messageViewController.status = newValue
 
     UIView.animate(
       withDuration: duration,
@@ -173,9 +176,9 @@ open class BarcodeScannerViewController: UIViewController {
           self?.resetState()
         }
 
-        self?.messageView.layer.removeAllAnimations()
+      //  self?.messageView.layer.removeAllAnimations()
         if self?.status.state == .processing {
-          self?.messageViewController.animateLoading()
+        //  self?.messageViewController.animateLoading()
         }
       }))
   }
@@ -235,7 +238,7 @@ private extension BarcodeScannerViewController {
       cameraView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
       cameraView.bottomAnchor.constraint(
         equalTo: view.bottomAnchor,
-        constant: -BarcodeScannerViewController.footerHeight
+        constant:hideFooterView ? 0 : -BarcodeScannerViewController.footerHeight
       )
     )
 
@@ -257,25 +260,25 @@ private extension BarcodeScannerViewController {
     }
   }
 
-  private func makeExpandedConstraints() -> [NSLayoutConstraint] {
-    return [
-      messageView.topAnchor.constraint(equalTo: view.topAnchor),
-      messageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-      messageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-      messageView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-    ]
-  }
+//  private func makeExpandedConstraints() -> [NSLayoutConstraint] {
+//    return [
+//      messageView.topAnchor.constraint(equalTo: view.topAnchor),
+//      messageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+//      messageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+//      messageView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+//    ]
+//  }
 
-  private func makeCollapsedConstraints() -> [NSLayoutConstraint] {
-    return [
-      messageView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-      messageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-      messageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-      messageView.heightAnchor.constraint(
-        equalToConstant: BarcodeScannerViewController.footerHeight
-      )
-    ]
-  }
+//  private func makeCollapsedConstraints() -> [NSLayoutConstraint] {
+//    return [
+//      messageView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+//      messageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+//      messageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+//      messageView.heightAnchor.constraint(
+//        equalToConstant: hideFooterView ? 0 : -BarcodeScannerViewController.footerHeight
+//      )
+//    ]
+//  }
 }
 
 // MARK: - HeaderViewControllerDelegate
@@ -334,6 +337,6 @@ extension BarcodeScannerViewController: CameraViewControllerDelegate {
     }
 
     codeDelegate?.scanner(self, didCaptureCode: code, type: rawType)
-    animateFlash(whenProcessing: isOneTimeSearch)
+    //animateFlash(whenProcessing: isOneTimeSearch)
   }
 }
