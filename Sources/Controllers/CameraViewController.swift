@@ -293,10 +293,46 @@ public final class CameraViewController: UIViewController {
         strongSelf.setupSessionOutput()
         strongSelf.delegate?.cameraViewControllerDidSetupCaptureSession(strongSelf)
       } else {
+        strongSelf.showAlert(title: "提示", message: "请检查相机是否打开", buttonTitles: ["取消","确定"], highlightedButtonIndex: 1) { (index) in
+            
+            if index == 1
+            {
+                DispatchQueue.main.async {
+                    if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.openURL(settingsURL)
+                  }
+                }
+            }
+        }
         strongSelf.delegate?.cameraViewControllerDidFailToSetupCaptureSession(strongSelf)
       }
     }
   }
+    
+    @discardableResult
+    func showAlert(title: String?, message: String?, buttonTitles: [String]? = nil, highlightedButtonIndex: Int? = nil, completion: ((Int) -> Void)? = nil) -> UIAlertController {
+        let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        var allButtons = buttonTitles ?? [String]()
+        if allButtons.count == 0 {
+            allButtons.append("OK")
+        }
+
+        for index in 0..<allButtons.count {
+            let buttonTitle = allButtons[index]
+            let action = UIAlertAction(title: buttonTitle, style: .default, handler: { (_) in
+                completion?(index)
+            })
+            alertController.addAction(action)
+            // Check which button to highlight
+            if let highlightedButtonIndex = highlightedButtonIndex, index == highlightedButtonIndex {
+                if #available(iOS 9.0, *) {
+                    alertController.preferredAction = action
+                }
+            }
+        }
+        present(alertController, animated: true, completion: nil)
+        return alertController
+    }
 
   /// Sets up capture input, output and session.
   private func setupSessionInput(for position: AVCaptureDevice.Position) {
